@@ -5,8 +5,6 @@ include_once 'auth.php';
 include_once 'dbconnection.class.php';
 include_once 'humansize.php';
 
-$page = array( 'status' => '&nbsp;');
-
 $db = new dbConnection($settings);
 $db->connect();
 
@@ -27,20 +25,21 @@ if (isset($_GET['file'])) {
 	}
 }
 
+$page = array( 'status' => '&nbsp;');
+
 if (isset($_FILES["file"])) {
 	if ($_FILES["file"]["error"] > 0) {
 		$page['status'] = "Error: " . $_FILES["file"]["error"];
 	} else {
-		$filename = $_FILES["file"]["name"];
 		$filename = $db->insertFile(
 			$_SERVER["REMOTE_ADDR"],
 			$_FILES["file"]["size"],
 			$_POST['comment'], 
-			$filename);
+			$_FILES["file"]["name"]);
 		$filename = $settings['location'].'/'.$filename;
 		move_uploaded_file($_FILES["file"]["tmp_name"], $filename);
 
-		$page['status'] = "Upload success";
+		$page['status'] = "Upload  success";
 	}
 }
 

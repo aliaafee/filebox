@@ -25,7 +25,10 @@ class dbConnection {
 	}
 
 	public function insertFile($ip, $size, $comment, $filename) {
+		$ip = SQLite3::escapeString($ip);
+		$size = SQLite3::escapeString($size);
 		$comment = SQLite3::escapeString($comment);
+		$filename = SQLite3::escapeString($filename);
 
 		$q = $this->querySingle("INSERT INTO files VALUES (NULL, datetime('now'), '$ip', '$size', '$comment', '$filename', '')");
 		
@@ -47,6 +50,7 @@ class dbConnection {
 
 	public function getFilename($id) {
 		$id = SQLite3::escapeString($id);
+
 		$q = $this->query("SELECT ofilename, filename FROM files WHERE id=$id");
 
 		if ($q == false) {
