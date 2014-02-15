@@ -10,6 +10,23 @@ $page = array( 'status' => '&nbsp;');
 $db = new dbConnection($settings);
 $db->connect();
 
+if (isset($_GET['file'])) {
+	if (isloggedin()) {
+		$file = $db->getFilename($_GET['file']);
+		$filename = $settings['location'].'/'.$file['filename'];
+		if ($file == false) {
+			header('HTTP/1.0 404 Not Found');
+			echo '<h1>File Not Found</h1>';
+		} else {
+			header("Content-Type: ".mime_content_type($filename));
+			header("Content-Length: " . filesize($filename));
+
+			readfile($filename);
+		}
+		exit();
+	}
+}
+
 if (isset($_FILES["file"])) {
 	if ($_FILES["file"]["error"] > 0) {
 		$page['status'] = "Error: " . $_FILES["file"]["error"];
@@ -20,7 +37,7 @@ if (isset($_FILES["file"])) {
 			$_FILES["file"]["size"],
 			$_POST['comment'], 
 			$filename);
-		$filename = $settings['location'].$filename;
+		$filename = $settings['location'].'/'.$filename;
 		move_uploaded_file($_FILES["file"]["tmp_name"], $filename);
 
 		$page['status'] = "Upload success";
@@ -45,7 +62,7 @@ if (isloggedin()) {
 		$page['filelist'] .= '<td>'.$row['date'].'</td>';
 		$page['filelist'] .= '<td>'.$row['ip'].'</td>';
 		$page['filelist'] .= '<td>'.$row['comment'].'</td>';
-		$page['filelist'] .= '<td><a href="'.$settings['locationuri'].$row['filename'].'" >'.$row['ofilename'].'</a></td>';
+		$page['filelist'] .= '<td><a href=?file='.$row['id'].' >'.$row['ofilename'].'</a></td>';
 		$page['filelist'] .= '<td>'.humanSize($row['size']).'</td>';
 		$page['filelist'] .= '</tr>';
 	}

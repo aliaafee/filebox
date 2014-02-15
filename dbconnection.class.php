@@ -40,9 +40,21 @@ class dbConnection {
 	}
 
 	public function getFileList() {
-		$q = $this->query("SELECT date, ip, size, comment, ofilename, filename FROM files ORDER BY date DESC");
+		$q = $this->query("SELECT id, date, ip, size, comment, ofilename, filename FROM files ORDER BY date DESC");
 
 		return $q;
+	}
+
+	public function getFilename($id) {
+		$id = SQLite3::escapeString($id);
+		$q = $this->query("SELECT ofilename, filename FROM files WHERE id=$id");
+
+		if ($q == false) {
+			return false;
+		}
+
+		$row = $q->fetchArray(SQLITE3_ASSOC);
+		return $row;
 	}
 
 	private function querySingle($querystring) {
