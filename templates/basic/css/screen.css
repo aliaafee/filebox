@@ -8,8 +8,20 @@ body {
 	text-decoration: none;
 }
 
+#loginbar a {
+	display: block;
+	float: right;
+	font-size: 80%;
+}
+
 #buttons {
 	padding: 3px;
+}
+
+#captcha {
+}
+
+#captcha_code {
 }
 
 #textbox {

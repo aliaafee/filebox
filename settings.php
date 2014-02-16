@@ -9,7 +9,10 @@ $settings = array (
 	'database'	=> array (
 		'type' => 'sqlite',
 		'file' => '/Users/ali/Public/upload/db.sqlite'
-	)
+	),
+	'captchaon'	=> true,
+	'securimagepath' => '/Users/ali/Public/securimage',
+	'securimageuri'	=> '/~ali/securimage'
 );
 
 ?>
