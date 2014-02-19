@@ -32,7 +32,7 @@ class fileboxdb extends db {
 	public function getFileList() {
 		return $this->queryAsTable(
 			"SELECT id, date, ip, comment, ofilename, filename, size FROM files ORDER BY date DESC",
-			$headers= Array('', 'Date', 'From', 'Comment', 'Size', '', 'Size'),
+			$headers= Array('', 'Date', 'From', 'Comment', 'File', '', 'Size'),
 			$links= Array(
 				'ofilename' => '?file={id}&name={ofilename}'
 			),
