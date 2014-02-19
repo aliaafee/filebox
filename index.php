@@ -2,23 +2,22 @@
 
 include_once 'settings.php';
 include_once 'auth.php';
-include_once 'dbconnection.class.php';
+include_once 'filebox.db.php';
 include_once 'humansize.php';
 if ($settings['captchaon']) {
 	include_once $settings['securimagepath'].'/securimage.php';
 }
 
-$db = new dbConnection($settings);
-$db->connect();
+$db = new fileboxdb($settings);
 
 if (isset($_GET['file'])) {
 	if (isloggedin()) {
-		$file = $db->getFilename($_GET['file']);
-		$filename = $settings['location'].'/'.$file['filename'];
+		$file = $db->getFilename($_GET['file']);	
 		if ($file == false) {
 			header('HTTP/1.0 404 Not Found');
 			echo '<h1>File Not Found</h1>';
 		} else {
+			$filename = $settings['location'].'/'.$file['filename'];
 			header("Content-Type: ".mime_content_type($filename));
 			header("Content-Length: " . filesize($filename));
 
@@ -33,18 +32,45 @@ $page = array( 'status' => '&nbsp;');
 if (isset($_FILES["file"]) and isset($_POST['comment'])) {
 	function uploadfile() {
 		global $_FILES, $_POST, $page, $db, $settings;
-		if ($_FILES["file"]["error"] > 0) {
-			$page['status'] = "Error: " . $_FILES["file"]["error"];
-		} else {
+		try {
+			$db->beginTransaction();
+
+			switch ($_FILES['upfile']['error']) {
+				case UPLOAD_ERR_OK:
+					break;
+				case UPLOAD_ERR_NO_FILE:
+					throw new RuntimeException('No file sent.');
+				case UPLOAD_ERR_INI_SIZE:
+				case UPLOAD_ERR_FORM_SIZE:
+					throw new RuntimeException('Exceeded filesize limit.');
+				default:
+					throw new RuntimeException('Unknown errors.');
+			}
+
+			if ($_FILES['upfile']['size'] > 1000000) {
+				throw new RuntimeException('Exceeded filesize limit.');
+			}
+
 			$filename = $db->insertFile(
 				$_SERVER["REMOTE_ADDR"],
 				$_FILES["file"]["size"],
 				$_POST['comment'], 
-				$_FILES["file"]["name"]);
+				$_FILES["file"]["name"]
+			);
+
 			$filename = $settings['location'].'/'.$filename;
-			move_uploaded_file($_FILES["file"]["tmp_name"], $filename);
+
+			if (!@move_uploaded_file($_FILES["file"]["tmp_name"], $filename)) {
+				throw new RuntimeException('Failed to move uploaded file.');
+			}
 
 			$page['status'] = "Upload  success";
+
+			$db->commit();
+		} catch (Exception $e) {
+			$db->rollBack();
+
+			$page['status'] = "Upload error, ".$e->getMessage();
 		}
 	}
 
@@ -85,21 +111,7 @@ if ($settings['captchaon']) {
 $page['uploadbox'] = load_template('uploadbox', array( 'captcha' => $captcha ));
 
 if (isloggedin()) {
-	$files = $db->getFileList();
-
-	$page['filelist'] = '<table><tr><th>Date</th><th>From</th><th>Comment</th><th>File</th><th>Size</th></tr>';
-
-	while ( $row = $files->fetchArray(SQLITE3_ASSOC) ) {
-		$page['filelist'] .= '<tr>';
-		$page['filelist'] .= '<td>'.$row['date'].'</td>';
-		$page['filelist'] .= '<td>'.$row['ip'].'</td>';
-		$page['filelist'] .= '<td>'.$row['comment'].'</td>';
-		$page['filelist'] .= '<td><a href=?file='.$row['id'].' >'.$row['ofilename'].'</a></td>';
-		$page['filelist'] .= '<td>'.humanSize($row['size']).'</td>';
-		$page['filelist'] .= '</tr>';
-	}
-
-	$page['filelist'] .= '</table>';
+	$page['filelist'] = $db->getFileList();
 } else {
 	$page['filelist'] = '';
 }
