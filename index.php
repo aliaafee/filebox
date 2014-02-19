@@ -35,7 +35,7 @@ if (isset($_FILES["file"]) and isset($_POST['comment'])) {
 		try {
 			$db->beginTransaction();
 
-			switch ($_FILES['upfile']['error']) {
+			switch ($_FILES['file']['error']) {
 				case UPLOAD_ERR_OK:
 					break;
 				case UPLOAD_ERR_NO_FILE:
@@ -47,9 +47,10 @@ if (isset($_FILES["file"]) and isset($_POST['comment'])) {
 					throw new RuntimeException('Unknown errors.');
 			}
 
-			if ($_FILES['upfile']['size'] > 1000000) {
+			/*
+			if ($_FILES['file']['size'] > 1000000) {
 				throw new RuntimeException('Exceeded filesize limit.');
-			}
+			}*/
 
 			$filename = $db->insertFile(
 				$_SERVER["REMOTE_ADDR"],
