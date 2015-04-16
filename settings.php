@@ -8,7 +8,7 @@ $settings = array (
 	'location'	=> '/Users/ali/Public/upload',
 	'database'	=> array (
 		'type' => 'sqlite',
-		'file' => '/Users/ali/Public/upload/db.sqlite'
+		'file' => '/Users/ali/Public/upload/db4.sqlite'
 	),
 	'captchaon'	=> true,
 	'securimagepath' => '/Users/ali/Public/securimage',

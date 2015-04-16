@@ -1,29 +1,38 @@
 <?php
 
 include_once 'settings.php';
+include_once 'template.php';
 include_once 'auth.php';
 include_once 'filebox.db.php';
 include_once 'humansize.php';
+
 if ($settings['captchaon']) {
 	include_once $settings['securimagepath'].'/securimage.php';
 }
 
-$db = new fileboxdb($settings);
+try {
+	$db = new fileboxdb($settings['database']['file']);
+} catch (PDOException $e) {
+	echo load_template('error', Array( 'message' => $e->getMessage() ));
+	exit();
+}
 
 if (isset($_GET['file'])) {
 	if (isloggedin()) {
-		$file = $db->getFilename($_GET['file']);	
-		if ($file == false) {
-			header('HTTP/1.0 404 Not Found');
-			echo '<h1>File Not Found</h1>';
-		} else {
-			$filename = $settings['location'].'/'.$file['filename'];
-			header("Content-Type: ".mime_content_type($filename));
-			header("Content-Length: " . filesize($filename));
+		if (hasPermission('filedown')) {
+			$file = $db->getFilename($_GET['file']);	
+			if ($file == false) {
+				header('HTTP/1.0 404 Not Found');
+				echo '<h1>File Not Found</h1>';
+			} else {
+				$filename = $settings['location'].'/'.$file['filename'];
+				header("Content-Type: ".mime_content_type($filename));
+				header("Content-Length: " . filesize($filename));
 
-			readfile($filename);
+				readfile($filename);
+			}
+			exit();
 		}
-		exit();
 	}
 }
 
@@ -52,8 +61,15 @@ if (isset($_FILES["file"]) and isset($_POST['comment'])) {
 				throw new RuntimeException('Exceeded filesize limit.');
 			}*/
 
+			if (isloggedin()) {
+				$username = $_SESSION['USER'];
+			} else {
+				$username = $_SERVER["REMOTE_ADDR"];
+			}
+
 			$filename = $db->insertFile(
 				$_SERVER["REMOTE_ADDR"],
+				$username,
 				$_FILES["file"]["size"],
 				$_POST['comment'], 
 				$_FILES["file"]["name"]
@@ -76,7 +92,7 @@ if (isset($_FILES["file"]) and isset($_POST['comment'])) {
 	}
 
 	if ($settings['captchaon']) {
-		if (isloggedin()) {
+		if (isloggedin() && hasPermission('fileup')) {
 			uploadfile();
 		} else {
 			if (isset($_POST['captcha_code'])) {
@@ -94,25 +110,34 @@ if (isset($_FILES["file"]) and isset($_POST['comment'])) {
 }
 
 if (isloggedin()) {
-	$page['loginbutton'] = '<a href="?logout">Logout</a>';
-} else {
-	$page['loginbutton'] = ''; #'<a href="?login">Login</a>';
-}
-
-$captcha = "";
-if ($settings['captchaon']) {
-	if (isloggedin()) {
-		$captcha = "";
-	} else {
-		$captcha = '<div><img id="captcha" src="'.$settings['securimageuri'].'/securimage_show.php" alt="CAPTCHA Image" /></div>'.
-					'<div><input type="text" id="captcha_code" name="captcha_code" size="10" maxlength="6" /></div>';
+	$page['loginbutton'] = '<a href="?logout">Logout ['.getFullname().']</a>';
+	if (hasPermission('admin')) {
+		$page['loginbutton'] .= '<a href="admin.php">Admin</a>';
 	}
+} else {
+	$page['loginbutton'] = '<a href="?login">Login</a>';
 }
 
-$page['uploadbox'] = load_template('uploadbox', array( 'captcha' => $captcha ));
+$captcha = '<div><img id="captcha" src="'.$settings['securimageuri'].'/securimage_show.php" alt="CAPTCHA Image" /></div>'.
+					'<div><input type="text" id="captcha_code" name="captcha_code" size="10" maxlength="6" /></div>';
 
 if (isloggedin()) {
-	$page['filelist'] = $db->getFileList();
+	if (hasPermission('fileup')) {
+		$page['uploadbox'] = load_template('uploadbox', array( 'captcha' => '' ));
+	} else {
+		$page['uploadbox'] = load_template('uploadbox', array( 'captcha' => $captcha ));
+	}
+} else {
+	$page['uploadbox'] = load_template('uploadbox', array( 'captcha' => $captcha ));
+}
+
+
+if (isloggedin()) {
+	if (hasPermission('filedown')) {
+		$page['filelist'] = $db->getFileList();
+	} else {
+		$page['filelist'] = '';
+	}
 } else {
 	$page['filelist'] = '';
 }

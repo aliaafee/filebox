@@ -1,31 +1,17 @@
 <?php
 
-//assumes settings = Array ( ['database'] => Array( 'file' => '/path/to/db.sqlite'))
-
 class db extends pdo {
-	protected $settings;
-
-	public function __construct($settings) {
-		$this->settings = $settings;
-		parent::__construct('sqlite:'.$this->settings['database']['file']);
+	public function __construct($dbfile) {
+		parent::__construct('sqlite:'.$dbfile);
 
 		$this->setAttribute(PDO::ATTR_ERRMODE, PDO::ERRMODE_EXCEPTION);
 	}
 
 	public function createTables() {
-		//Create the databse tables
+		//Create the database tables
 		return true;
 	}
-
-	public function query($statement) {
-		try {
-			return parent::query($statement);
-		} catch (PDOException $e) {
-			$this->createTables();
-			return parent::query($statement);
-		}
-	}
-
+	
 	public function queryAsTable($statement, $headers=Array(), $links=Array(), $format=Array()) {
 		/*
 		Returns a query result as an HTML table
@@ -37,7 +23,8 @@ class db extends pdo {
 					With value of that column for the current row. Note that the column should
 					also be selected in the query
 			format	Associative array as in links. calls the given string formating function,
-					the formating function should return a string
+					the formating function should return a string and must accept one parameter
+					as a string
 		*/
 
 		try {
